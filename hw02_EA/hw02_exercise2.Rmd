@@ -1,0 +1,84 @@
+---
+title: "Homework 2 : Exercise 2"
+author: "Elyse Adamic"
+output:
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+## Exercise 2: Exploring Variables 
+### Categorical Variable: Continent
+
+```{r, include = FALSE}
+library(gapminder)
+library(tidyverse)
+```
+
+A list of possible values and an overall bar graph:
+
+```{r}
+gapminder$continent %>% 
+  levels()
+
+gapminder %>% 
+  ggplot(aes(continent)) +
+  geom_bar()
+
+```
+
+Count observations per continent:
+```{r}
+count(gapminder,vars = continent)
+# tabulate(gapminder$continent) another less ideal way- does not show names
+```
+
+
+Count countries per continent:
+```{r}
+gapminder %>% 
+  select(continent,country) %>% 
+  distinct() %>% 
+  count(vars = continent)
+```
+
+Which countries are in Oceania?
+```{r}
+gapminder %>% 
+  filter(continent=="Oceania") %>% 
+  count(vars = country)
+```
+
+### Quantitative Variable: lifeExp
+Basic Summaries:
+```{r}
+gapminder$lifeExp %>% 
+  summary()
+
+# We can subset to summarize for a specific year or country:
+summary(subset(gapminder, year==2007)$lifeExp)
+summary(subset(gapminder, country == "Canada")$lifeExp)
+
+# Summarize Canada by year
+canada <- subset(gapminder,country == "Canada")
+with(canada,tapply(lifeExp,year,mean))
+
+# Summarize by continent year
+with(gapminder,tapply(lifeExp,list(year,continent),mean))
+subset(gapminder, country == "Canada")
+
+# Country with highest and lowest life expectancy in the data
+gapminder[which.max(gapminder$lifeExp),]
+gapminder[which.min(gapminder$lifeExp),]
+```
+
+A histogram:
+```{r, message==FALSE}
+hist <- ggplot (gapminder, aes(x = lifeExp, color = continent)) +
+  geom_histogram(fill = "white", binwidth = 3) +
+  xlab("Life Expectancy") +
+  ylab("Count")
+
+hist + geom_vline(aes(xintercept=mean(lifeExp)),
+            color="black", linetype="dashed", size=1)
+```

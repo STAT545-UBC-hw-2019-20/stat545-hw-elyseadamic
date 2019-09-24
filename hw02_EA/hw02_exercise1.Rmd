@@ -1,0 +1,60 @@
+---
+title: "Homework 2: Exercise 1"
+author: "Elyse Adamic"
+output:
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+---
+
+## Exercise 1: Basic Data Wrangling
+```{r, include = FALSE}
+library(gapminder)
+library(tidyverse)
+```
+ 
+### 1.1 Display the data for 3 countries in the 1970s:
+```{r}
+#levels(gapminder$country) to choose countries
+#unique(gapminder$year) to see years
+
+# There are 143 countries to choose form, and only 2 years in the 1970s
+gapminder %>%
+  filter(country == "Canada" | country == "Switzerland" | country == "Sweden") %>%
+  filter(year < 1980 & year >= 1970)
+```
+
+### 1.2 Select specific variables 
+```{r}
+gapminder %>%
+  filter(country == "Canada" | country == "Switzerland" | country == "Sweden") %>%
+  filter(year < 1980 & year >= 1970) %>% 
+  select(country, gdpPercap)
+```
+ 
+### 1.3 Which entries have experienced a drop in life expectancy?
+```{r}
+gapminder %>%
+  arrange(country, year) %>% 
+  group_by(country) %>%
+  mutate(incr_lifeExp = lifeExp - lag(lifeExp)) %>% 
+  filter(incr_lifeExp < 0)
+```
+
+### 1.4 Show the max gdp for each country. 
+```{r}
+gapminder %>%
+  group_by(country) %>%
+  filter(gdpPercap == max(gdpPercap))
+```
+
+### 1.5 Life expectancy vs. log GDP per capita in Canada
+```{r}
+gapminder %>% 
+  filter(country == "Canada") %>% 
+  ggplot(aes(gdpPercap,lifeExp)) +
+  geom_point() + 
+  scale_x_log10("GDP Per Capita") +
+  ylab("Life Expectancy")
+```

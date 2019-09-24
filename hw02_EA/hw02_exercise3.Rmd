@@ -1,0 +1,70 @@
+---
+title: "Homework 2 : Exercise 3"
+author: "Elyse Adamic"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    keep_md: true
+---
+
+## Exercise 3: Exploring Plot Types
+### Scatterplot: gdpPerCap vs. Population
+
+```{r, include = FALSE}
+library(gapminder)
+library(tidyverse)
+```
+
+
+```{r} 
+ggplot(gapminder, aes(gdpPercap, pop, group = continent, color = continent)) +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_point(alpha = 0.4) +
+  xlab("log GDP Per Capita") +
+  ylab("log Population")
+```
+
+### Line Graph: population growth over time for Canada and Switzerland
+```{r}
+gapminder %>% 
+  mutate(pop_mil = pop/1000000) %>% 
+  filter(country == "Canada" | country == "Switzerland") %>% 
+  ggplot(aes(x = year, y = pop_mil, group = country, color = country)) + 
+  geom_line() + geom_point(size=3) + xlab("Year") + ylab("Population (millions)")
+
+```
+
+### Optional: Recycling
+```{r}
+filter(gapminder, country == c("Rwanda", "Afghanistan"))
+```
+The analyst did not succeed, as they did not get all observations for the two countries of interest. This is because of recycling and the problem that we are evaluating objects of two different lengths. Essentially, R is taking ``` c("Rwanda", "Afghanistan") ``` and repeating this to evaluate if ``` country[1] == "Rwanda", country[2] == "Afghanistan", country[3] == "Rwanda"...``` and pulling the observations which return "TRUE" for the entire legnth of gapminder. In this way, you are getting every second of each Afghanistan and Rwanda's observations. There are many differnt correct ways to do this:
+
+```{r}
+gapminder %>% 
+filter(country == "Rwanda" | country == "Afghanistan")
+
+# Note this also works:
+#filter(gapminder, country %in% c("Rwanda", "Afghanistan"))
+```
+
+### Optional: Improving Tibble Display
+**Note: these are only good for html_documents, I rendered as a .md for the sake of github**
+
+This is a small tibble:
+```
+gapminder %>% 
+  select(country:pop) %>% 
+  filter(country == "Canada") %>% 
+  knitr::kable()
+```
+
+This is a big tibble:
+```
+gapminder %>% 
+  select(country:pop) %>% 
+  DT::datatable()
+```
+
