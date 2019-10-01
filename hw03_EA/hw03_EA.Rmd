@@ -1,0 +1,130 @@
+---
+title: "HW-03"
+author: "Elyse Adamic"
+date: "25/09/2019"
+output: 
+  html_document:
+    toc: true
+    theme: paper
+---
+
+The first three tasks I did completely (for marks), the last two I did parts as extra. 
+
+For each task, produce 1) a tibble 2) a visualization tool 3) dialogue. 
+```{r, include = FALSE, warning = FALSE}
+library(gapminder)
+library(dplyr)
+library(tidyverse)
+library(ggridges)
+library(scales)
+```
+
+
+### Task 3
+Look at the spread of GDP per capita within continent.  
+  
+```{r}
+gapminder %>%
+  group_by(continent) %>% 
+  summarize(min = min(gdpPercap), mean = mean(gdpPercap), med = median(gdpPercap), max = max(gdpPercap), sd = sd(gdpPercap))
+
+ggplot(gapminder, aes(gdpPercap, continent, height= ..density.., fill = continent)) +
+  ggridges::geom_density_ridges(stat = "density", alpha = 0.5) +
+  ylab("Continent") +
+  xlab("gdp Per Capita")
+
+ggplot(gapminder, aes(continent, gdpPercap, color = year)) +
+  geom_jitter(alpha = 0.5) + 
+  xlab("Continent") +
+  ylab("gdp Per Capita")
+
+ggplot(gapminder, aes(x=continent, y=gdpPercap)) + 
+  geom_boxplot(aes(fill = continent), alpha = 0.3) + 
+    xlab("Continent") +
+    ylab("gdp Per Capita")
+
+```
+Here are three different demonstrations of the spread of GDP per capita wihtin the continents. Note I interpreted this as all years altogether. The tibble displays some summary statistics to compare between continents, however the distributions are best displayed visually. From the density ridges, clearly Africa has high bunching of low GDP per Capitas and Oceania has the highest mean. The jitter plot is perhaps most useful to see the outliers of Asia. It is also clear how few observations Oceania has. The box plot shows that European values are least bunched. Again, Asia has some extreme outliers and clearly has the highest maximum. 
+
+### Task 4
+Compute a trimmed or a weighted mean of life expectancy for each year. 
+```{r}
+gap_means <-gapminder %>% 
+  group_by(year) %>% 
+  summarise(normal = mean(lifeExp), 
+            trimmed = mean(lifeExp, trim = 0.2),
+            weighted = sum(lifeExp*pop)/sum(pop))
+
+# VISUALIZE
+#horizontal bar 
+
+ggplot(gap_means,aes(year)) + 
+  geom_point(aes(y = normal, color = "Normal")) + 
+  geom_point(aes(y = trimmed, color = "Trimmed")) +
+  geom_point(aes(y = weighted, color = "Weighted"))+ 
+  xlab("Year") + 
+  ylab("Various Life Expectancy Means")
+
+```
+Here the three means are plotted for each year. There is a clear upward trend in global mean life expectancy over time, regardless of the type of mean calculation. It seems the normal mean is flattest, and the weighted and trimmed means rise sharper. All three measures are relatively similar.   
+
+### Task 5
+Life expectancy over time on different contients.
+
+```{r}
+gapminder %>%
+  group_by(continent, year) %>% 
+  summarise(mean = mean(lifeExp))
+
+gapminder %>%
+  group_by(continent, year) %>% 
+  mutate(mean_lifeExp = mean(lifeExp)) %>% 
+  ggplot(aes(year,mean_lifeExp, color = continent)) + 
+  geom_line(aes(group = continent)) + 
+  ylab("Mean Life Expectancy" ) +
+  xlab("Year") +
+  scale_color_discrete("Continent")
+
+```
+This line graph also shows the upward trend in life expectancy over time for each continent. Note this is just the mean, alternatively it would be interesting to look at how the minimum or maximum observed life expectancy within a continent changes over time. This graph shows that rank is preserved, Oceania is always the highest and Africa is always the lowest. Essentially all countries experience constant increases, except Africa goes through a stagnant period in the 90s. 
+
+The following were done as optional exercises: 
+
+### Task 1
+Create a benchmark life expectancy for each year. How many countries wtihin each continent are below this benchmark each year? 
+
+```{r}
+# A benchmark: 25th quantile
+gapminder %>%
+  group_by(continent, year) %>% #5 continents x 12 years = 60 groups
+  summarize(n = sum(ifelse(lifeExp < quantile(gapminder$lifeExp, c(.25)),1,0)))
+
+```
+
+
+### Task 2
+Calculate the min and max GDP per capita for all continents.
+
+```{r}
+# This code displays the country of the maximum and minimum 
+gapminder %>%
+  group_by(continent) %>% 
+  summarize(max = max(gdpPercap), min = min(gdpPercap), 
+            country_min = country[gdpPercap == min], country_max = country[gdpPercap == max])
+
+# This is another way to list the country, I just filtered on minimum here. 
+gapminder %>% 
+  group_by(continent) %>% 
+  mutate(max = max(gdpPercap), min = min(gdpPercap)) %>% 
+  filter (gdpPercap == min) %>% 
+  arrange (min) %>% 
+  select (continent, country, year, min)
+
+# Recall that ggplot will ignore groupings! 
+
+```
+
+
+
+
+
