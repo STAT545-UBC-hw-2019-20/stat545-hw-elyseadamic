@@ -1,0 +1,162 @@
+---
+title: "Untitled"
+author: "Elyse Adamic"
+date: "10/10/2019"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(gapminder)
+library(forcats)
+library(gridExtra)
+```
+
+### Exercise 1: here::here
+Q: What is the value of the here::here package?
+A: This package essentially abstracts from specifying explicit paths, and allows your code to be more accesible between users, especially between Mac and Windows due to the "/". It makes it clear which sub-directories are within a project in an organized manner. It finds the project directory, and is robust to human error in writing file path names, as well as avoiding a mess if you rename or move directories. No one wants to waste time fidding with file paths on some code to make a code run locally on your computer, especially when going back and forth with collaborators. When you specify ```here::here``` it sets the top level of the project folder as "here" and you specify where files are relative to that top level. This is simply good a coding practice, similar to never setting a working directory or ```rm(list = ls())```. Furthermore, you should just always set up a project, as R "refreshes" whenever you open a new project, and has a default working directory. 
+
+```{r}
+library(here)
+here()
+```
+
+### Exercise 2: Factors
+Choose a dataset and a factor variable to explore by 1) Drop factor / levels and 2) Reorder levels based on knowledge from data.
+
+Then explore the effects by 1) Comparing the results of arrange on the original and re-leveled factor and 2) Plotting a figure of before/after re-leveling the factor.
+
+```{r}
+# Check to see variable is factor:
+gapminder$continent %>%
+  str()
+
+nrow(gapminder)
+
+nlevels(gapminder$continent) #5 continents
+levels(gapminder$continent)
+
+# Drop Oceania 
+gap <- gapminder %>% 
+  filter(continent != "Oceania")
+
+nlevels(gap$continent) #note there are still 5 levels!
+nrow(gap)
+
+gap_dropped <- gap %>% 
+  droplevels()
+
+nlevels(gap_dropped$continent) # now only 4 levels
+levels(gap_dropped$continent) #Oceania is gone 
+```
+
+First note without reordering, the variables are just in alphabetical order. 
+```{r}
+# Comparing results of arrange
+# This is not as clear as figures - but here Asia comes before Americas
+gap_dropped %>% 
+  filter(year == 2007) %>% 
+  arrange(fct_reorder(continent, gdpPercap, min))
+
+# This more clearly shows the order has been flipped 
+gap_order <- gap_dropped %>% 
+  filter(year == 2007) %>% 
+  mutate(continent = fct_reorder(continent, gdpPercap, min)) 
+
+gap_order$continent %>% levels()
+gap_dropped$continent %>% levels()
+
+# Unordered/ BEFORE
+gap_dropped %>% 
+  filter(year == 2007) %>% 
+  ggplot(aes(x=continent)) + 
+  geom_bar() +
+  coord_flip() + 
+  xlab("Count") + ylab("Continent")
+
+# Ordered/ AFTER
+gap_dropped %>% 
+  filter(year == 2007) %>% 
+  ggplot(aes(fct_reorder(continent, gdpPercap, min))) + 
+  geom_bar() +
+  coord_flip()+
+  xlab("Count") + ylab("Continent Ordered by min gdp per capita")
+
+# Note there are many features to the forcats package:
+gap_dropped %>% 
+  filter(year == 2007) %>% 
+  mutate(continent = fct_lump(continent, n = 2)) %>% 
+  count(continent)
+
+```
+
+### Exercise 3: File input/output
+
+1) Export a grouped dataset to .csv
+```{r}
+gapminder_group <- gapminder %>% 
+  group_by(country) %>% 
+  summarize(ave_lifeExp = mean(lifeExp), ave_gdpPercap = mean(gdpPercap))
+
+write_csv(gapminder_group,here::here("hw05_EA","gapminder_group.csv"))
+```
+
+2) Read the dataset back in, it survived the round trip! Then play with factors again. Note saveRDS()/readRDS() is for the R data format .rds and dput()/dget is for ASCII.
+```{r}
+gap_read <- read_csv(here::here("hw05_EA","gapminder_group.csv"))
+
+gap_read %>% 
+  arrange(fct_reorder(country, ave_lifeExp, min))
+```
+
+### Exercise 4: Visualization Design
+Juxtapose one of the first graphs you made with new skills.
+
+The left graph is the original code from homework 2. While colourful, it is not very informative in looking at the distribtuion of life expectancy across continents. For the new graph to the right, I decided to represent the information in a box plot, using factor management. I added the jitter plott to similarly represent the concentration of values across the distribution. I also realized I did not need to separatly add the dashed line and instead add it directly to my ggplot code.
+
+I saved the graph with ggsave for exercise 5. 
+
+```{r fig.width = 15}
+hist <- ggplot (gapminder, aes(x = lifeExp, color = continent)) +
+  geom_histogram(fill = "white", binwidth = 3) +
+  xlab("Life Expectancy") +
+  ylab("Count")
+
+hist <- hist + geom_vline(aes(xintercept=mean(lifeExp)),
+            color="black", linetype="dashed", size=1)
+
+box <- ggplot(gapminder,aes(fct_reorder(continent, lifeExp),lifeExp, fill = continent))  +
+  geom_boxplot(aes(alpha = 0.2)) +
+  geom_jitter(width=0.1,alpha=0.2) +
+  geom_hline(aes(yintercept=mean(lifeExp)),color="black", linetype="dashed", size=1)+
+  labs(y = "Life Expectancy", x= "Continent") +
+  theme(legend.position="none") 
+
+grid.arrange(hist,box,ncol = 2)
+```
+
+### Exercise 5: Writing figures to files 
+Explicit provision of the plot object p via ```ggsave(..., plot = p)``` may matters when you have multiple plots, as the default option is to save the last plot displayed. Vectors retain sharpness regardless of resolution while rasters are made of pixels.
+
+```{r, include = FALSE}
+box <- ggplot(gapminder,aes(fct_reorder(continent, lifeExp),lifeExp, fill = continent))  +
+  geom_boxplot(aes(alpha = 0.2)) +
+  geom_jitter(width=0.1,alpha=0.2) +
+  geom_hline(aes(yintercept=mean(lifeExp)),color="black", linetype="dashed", size=1)+
+  labs(y = "Life Expectancy", x= "Continent") +
+  theme(legend.position="none") 
+ggsave("box.png")
+```
+
+![Here I have loaded and embeded.](/Users/elyseadamic/stat545-hw-elyseadamic/hw05_EA/box.png)
+
+
+
+***
+
+**Stat 545: [X]**
+
+***
